@@ -1,171 +1,376 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    layout_height="match_parent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@android:color/holo_blue_dark">
+    android:background="#0077CA"
+    tools:context=".MainActivity">
 
-    <TextView
-        android:id="@+id/status"
-        android:layout_width="match_parent"
-        android:layout_height="36dp"/>
-
-    <TextView
-        android:id="@+id/deviceName"
-        android:layout_below="@id/status"
-        android:layout_width="match_parent"
-        android:layout_height="36dp"/>
-
-    <LinearLayout
-        android:visibility="invisible"
-        android:id="@+id/dataArea"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/deviceName"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="8dp">
 
-        <TextView
-            android:id="@+id/accel_label"
-            android:layout_width="match_parent"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_status"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:text="@string/accel" />
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            app:cardCornerRadius="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:id="@+id/accel_area"
-            android:layout_below="@id/accel_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/accel_x" />
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:layout_margin="8dp"
+                        android:src="@drawable/icon_heart_rate" />
+
+                    <TextView
+                        android:id="@+id/deviceName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="8dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:hint="Device Name"
+                        android:textColor="#0077CA"
+                        android:textSize="14sp" />
+
+                    <ImageView
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:layout_margin="8dp"
+                        android:src="@drawable/icon_battery" />
+
+                    <TextView
+                        android:id="@+id/battery"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="8dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:hint="100%"
+                        android:textColor="#0077CA"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:layout_margin="8dp"
+                        android:src="@drawable/icon_no_synchronize" />
+
+                    <TextView
+                        android:id="@+id/status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="8dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-condensed"
+                        android:hint="Status"
+                        android:textColor="#0077CA"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_temperature"
+            android:layout_width="0dp"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            app:cardCornerRadius="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/card_status">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:width="50dp"
-                android:id="@+id/accel_x"
-                android:text="@string/emptyText"/>
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:text="@string/temp_label"
+                    android:textColor="#0077CA"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/imageView"
+                        android:layout_width="75dp"
+                        android:layout_height="75dp"
+                        android:layout_margin="8dp"
+                        app:srcCompat="@drawable/icon_temperature" />
+
+                    <TextView
+                        android:id="@+id/temperature_value"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_margin="8dp"
+                        android:fontFamily="monospace"
+                        android:gravity="center_horizontal|center_vertical"
+                        android:hint="36"
+                        android:textAlignment="center"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                        android:textColor="#E75D2A"
+                        android:textSize="60sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_accel"
+            android:layout_width="0dp"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            app:cardCornerRadius="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/card_temperature">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/accel_y" />
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:text="@string/accel"
+                    android:textColor="#0077CA"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/imageView_accel"
+                        android:layout_width="75dp"
+                        android:layout_height="75dp"
+                        android:layout_margin="8dp"
+                        app:srcCompat="@drawable/icon_coordinate_system" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="8dp"
+                        android:orientation="vertical">
+
+                        <ProgressBar
+                            android:id="@+id/progressBarX"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:max="250"
+                            android:min="-250"
+                            android:progress="0" />
+
+                        <ProgressBar
+                            android:id="@+id/progressBarY"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:max="250"
+                            android:min="-250"
+                            android:progress="0" />
+
+                        <ProgressBar
+                            android:id="@+id/progressBarZ"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:max="250"
+                            android:min="-250"
+                            android:progress="0" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_heart"
+            android:layout_width="0dp"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            app:cardCornerRadius="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/card_accel">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:width="50dp"
-                android:id="@+id/accel_y"
-                android:text="@string/emptyText"/>
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:text="@string/heart"
+                    android:textColor="#0077CA"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/imageView_heart"
+                        android:layout_width="75dp"
+                        android:layout_height="75dp"
+                        android:layout_margin="8dp"
+                        app:srcCompat="@drawable/icon_heart_with_pulse" />
+
+                    <TextView
+                        android:id="@+id/heart_rate_value"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_margin="8dp"
+                        android:fontFamily="monospace"
+                        android:gravity="center_horizontal|center_vertical"
+                        android:hint="65"
+                        android:textAlignment="center"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                        android:textColor="#E75D2A"
+                        android:textSize="60sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_eda"
+            android:layout_width="0dp"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            app:cardCornerRadius="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/card_heart">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/accel_z" />
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:width="50dp"
-                android:id="@+id/accel_z"
-                android:text="@string/emptyText"/>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:text="@string/eda_label"
+                    android:textColor="#0077CA"
+                    android:textStyle="bold" />
 
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/bvp_label"
-            android:layout_marginTop="10dp"
-            android:layout_below="@id/accel_area"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/bvp_label" />
+                    <ImageView
+                        android:id="@+id/imageView_eda"
+                        android:layout_width="75dp"
+                        android:layout_height="75dp"
+                        android:layout_margin="8dp"
+                        app:srcCompat="@drawable/icon_fatigue" />
 
-        <TextView
-            android:layout_below="@id/bvp_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/bvp"
-            android:text="@string/emptyText"/>
+                    <TextView
+                        android:id="@+id/heart_eda_value"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_margin="8dp"
+                        android:fontFamily="monospace"
+                        android:gravity="center_horizontal|center_vertical"
+                        android:hint="3.10"
+                        android:textAlignment="center"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                        android:textColor="#E75D2A"
+                        android:textSize="60sp" />
+                </LinearLayout>
 
-        <TextView
-            android:id="@+id/eda_label"
-            android:layout_marginTop="10dp"
-            android:layout_below="@id/bvp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/eda_label" />
+            </LinearLayout>
 
-        <TextView
-            android:layout_below="@id/eda_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/eda"
-            android:text="@string/emptyText"/>
-
-        <TextView
-            android:id="@+id/ibi_label"
-            android:layout_marginTop="10dp"
-            android:layout_below="@id/eda"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/ibi_label" />
-
-        <TextView
-            android:layout_below="@id/ibi_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/ibi"
-            android:text="@string/emptyText"/>
-
-        <TextView
-            android:id="@+id/temp_label"
-            android:layout_marginTop="10dp"
-            android:layout_below="@id/ibi"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/temp_label" />
-
-        <TextView
-            android:layout_below="@id/temp_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/temperature"
-            android:text="@string/emptyText"/>
-
-        <TextView
-            android:id="@+id/battery_label"
-            android:layout_marginTop="10dp"
-            android:layout_below="@id/temperature"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/battery_label" />
-
-        <TextView
-            android:layout_below="@id/battery_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/battery"
-            android:text="@string/emptyText"/>
-
-        <TextView
-            android:layout_below="@id/wrist_status_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/wrist_status_label"
-            android:text="@string/emptyText"/>
+        </androidx.cardview.widget.CardView>
 
         <Button
             android:id="@+id/disconnectButton"
-            android:text="STOP STREAMING"
             android:layout_width="match_parent"
-            android:layout_height="44dp" />
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="#003C71"
+            android:text="STOP STREAMING"
+            android:textColor="#FF8A65"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/card_eda" />
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-</LinearLayout>
+</androidx.core.widget.NestedScrollView>

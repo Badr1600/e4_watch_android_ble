@@ -1,8 +1,12 @@
 <resources>
-
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
+
+        <!-- provided green color to the ActionBar -->
+        <item name="colorPrimary">#0077CA</item>
+        <item name="colorPrimaryDark">#003C71</item>
+        <item name="colorAccent">#E75D2A</item>
     </style>
 
 </resources>

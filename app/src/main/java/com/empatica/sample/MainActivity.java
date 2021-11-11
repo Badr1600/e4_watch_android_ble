@@ -8,22 +8,29 @@ import android.bluetooth.le.ScanCallback;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.Image;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.empatica.empalink.ConnectionNotAllowedException;
 import com.empatica.empalink.EmpaDeviceManager;
 import com.empatica.empalink.EmpaticaDevice;
@@ -33,42 +40,58 @@ import com.empatica.empalink.config.EmpaStatus;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
 
+import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 
 public class MainActivity extends AppCompatActivity implements EmpaDataDelegate, EmpaStatusDelegate {
 
     private static final String TAG = "MainActivity";
+
+    private static final String MQTT = "MQTT_EVENT";
 
     private static final int REQUEST_ENABLE_BT = 1;
 
     private static final int REQUEST_PERMISSION_ACCESS_COARSE_LOCATION = 1;
 
 
-    private static final String EMPATICA_API_KEY = ""; // TODO insert your API Key here
+    private static final String EMPATICA_API_KEY = "BADR"; // TODO insert your API Key here
 
 
     private EmpaDeviceManager deviceManager = null;
 
-    private TextView accel_xLabel;
+    private ProgressBar accel_xLabel;
+    private ProgressBar accel_yLabel;
+    private ProgressBar accel_zLabel;
 
-    private TextView accel_yLabel;
-
-    private TextView accel_zLabel;
-
-    private TextView bvpLabel;
 
     private TextView edaLabel;
-
     private TextView ibiLabel;
-
     private TextView temperatureLabel;
 
     private TextView batteryLabel;
-
     private TextView statusLabel;
-
     private TextView deviceNameLabel;
 
-    private LinearLayout dataCnt;
+    private CardView temperatureCV;
+    private CardView heartRateCV;
+    private CardView edaCV;
+    private CardView accelCV;
+    MqttAndroidClient mqttAndroidClient;
+
+    final String serverUri = "tcp://199.212.33.168:1883";
+    String clientId = "ExampleAndroidClient";
+    final String subscriptionTopic = "exampleAndroidTopic";
+    final String publishTopic = "tb/mqtt-integration-tutorial/sensors/SN-001/temperature";
+    final String publishMessage = "{\"value\":25.1}";
 
 
     @Override
@@ -79,48 +102,106 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         setContentView(R.layout.activity_main);
 
         // Initialize vars that reference UI components
-        statusLabel = (TextView) findViewById(R.id.status);
+        statusLabel = findViewById(R.id.status);
+        accel_xLabel = findViewById(R.id.progressBarX);
+        accel_yLabel = findViewById(R.id.progressBarY);
+        accel_zLabel = findViewById(R.id.progressBarZ);
+        edaLabel = findViewById(R.id.heart_eda_value);
+        ibiLabel = findViewById(R.id.heart_rate_value);
+        temperatureLabel = findViewById(R.id.temperature_value);
+        batteryLabel = findViewById(R.id.battery);
+        deviceNameLabel = findViewById(R.id.deviceName);
 
-        dataCnt = (LinearLayout) findViewById(R.id.dataArea);
-
-        accel_xLabel = (TextView) findViewById(R.id.accel_x);
-
-        accel_yLabel = (TextView) findViewById(R.id.accel_y);
-
-        accel_zLabel = (TextView) findViewById(R.id.accel_z);
-
-        bvpLabel = (TextView) findViewById(R.id.bvp);
-
-        edaLabel = (TextView) findViewById(R.id.eda);
-
-        ibiLabel = (TextView) findViewById(R.id.ibi);
-
-        temperatureLabel = (TextView) findViewById(R.id.temperature);
-
-        batteryLabel = (TextView) findViewById(R.id.battery);
-
-        deviceNameLabel = (TextView) findViewById(R.id.deviceName);
-
+        temperatureCV = findViewById(R.id.card_temperature);
+        heartRateCV = findViewById(R.id.card_heart);
+        edaCV = findViewById(R.id.card_eda);
+        accelCV = findViewById(R.id.card_accel);
 
         final Button disconnectButton = findViewById(R.id.disconnectButton);
 
         disconnectButton.setOnClickListener(new View.OnClickListener() {
-
             @Override
             public void onClick(View v) {
-
-                if (deviceManager != null) {
-
-                    deviceManager.disconnect();
-                }
+                publishMessage();
+//                if (deviceManager != null) {
+//                    deviceManager.disconnect();
+//                }
             }
         });
+
+        ImageView temperatureIV = findViewById(R.id.imageView);
+        Glide.with(this).load(getImage("icon_temperature")).into(temperatureIV);
+
+        ImageView heartIV = findViewById(R.id.imageView_heart);
+        Glide.with(this).load(getImage("icon_heart_with_pulse")).into(heartIV);
+
+        clientId = clientId + System.currentTimeMillis();
+
+        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
+        mqttAndroidClient.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+
+                if (reconnect) {
+                    Toast.makeText(getApplicationContext(),"Reconnected to : " + serverURI, Toast.LENGTH_SHORT).show();
+                    // Because Clean Session is true, we need to re-subscribe
+                    subscribeToTopic();
+                } else {
+                    Toast.makeText(getApplicationContext(),"Connected to: " + serverURI, Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void connectionLost(Throwable cause) {
+                Toast.makeText(getApplicationContext(),"The Connection was lost.", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                Toast.makeText(getApplicationContext(),"Incoming message: " + new String(message.getPayload()), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+
+            }
+        });
+
+        MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
+        mqttConnectOptions.setAutomaticReconnect(true);
+        mqttConnectOptions.setCleanSession(false);
+
+        try {
+            //addToHistory("Connecting to " + serverUri);
+            mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                    disconnectedBufferOptions.setBufferEnabled(true);
+                    disconnectedBufferOptions.setBufferSize(100);
+                    disconnectedBufferOptions.setPersistBuffer(false);
+                    disconnectedBufferOptions.setDeleteOldestMessages(false);
+                    mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
+                    subscribeToTopic();
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    Toast.makeText(getApplicationContext(),"Failed to connect to: " + serverUri, Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        } catch (MqttException ex){
+            ex.printStackTrace();
+        }
+
 
         initEmpaticaDeviceManager();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case REQUEST_PERMISSION_ACCESS_COARSE_LOCATION:
                 // If request is cancelled, the result arrays are empty.
@@ -163,9 +244,8 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     private void initEmpaticaDeviceManager() {
         // Android 6 (API level 23) now require ACCESS_COARSE_LOCATION permission to use BLE
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, REQUEST_PERMISSION_ACCESS_COARSE_LOCATION);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION_ACCESS_COARSE_LOCATION);
         } else {
-
             if (TextUtils.isEmpty(EMPATICA_API_KEY)) {
                 new AlertDialog.Builder(this)
                         .setTitle("Warning")
@@ -179,7 +259,6 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
                         .show();
                 return;
             }
-
             // Create a new EmpaDeviceManager. MainActivity is both its data and status delegate.
             deviceManager = new EmpaDeviceManager(getApplicationContext(), this, this);
 
@@ -217,13 +296,14 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
 
         Log.i(TAG, "didDiscoverDevice" + deviceName + "allowed: " + allowed);
 
-        if (allowed) {
+        // TODO Simple fix to overcome the need for the API KEY
+        if (!allowed) {
             // Stop scanning. The first allowed device will do.
             deviceManager.stopScanning();
             try {
                 // Connect to the device
                 deviceManager.connectDevice(bluetoothDevice);
-                updateLabel(deviceNameLabel, "To: " + deviceName);
+                updateLabel(deviceNameLabel, "" + deviceName);
             } catch (ConnectionNotAllowedException e) {
                 // This should happen only if you try to connect when allowed == false.
                 Toast.makeText(MainActivity.this, "Sorry, you can't connect to this device", Toast.LENGTH_SHORT).show();
@@ -241,19 +321,19 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         */
         switch (errorCode) {
             case ScanCallback.SCAN_FAILED_ALREADY_STARTED:
-                Log.e(TAG,"Scan failed: a BLE scan with the same settings is already started by the app");
+                Log.e(TAG, "Scan failed: a BLE scan with the same settings is already started by the app");
                 break;
             case ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED:
-                Log.e(TAG,"Scan failed: app cannot be registered");
+                Log.e(TAG, "Scan failed: app cannot be registered");
                 break;
             case ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED:
-                Log.e(TAG,"Scan failed: power optimized scan feature is not supported");
+                Log.e(TAG, "Scan failed: power optimized scan feature is not supported");
                 break;
             case ScanCallback.SCAN_FAILED_INTERNAL_ERROR:
-                Log.e(TAG,"Scan failed: internal error");
+                Log.e(TAG, "Scan failed: internal error");
                 break;
             default:
-                Log.e(TAG,"Scan failed with unknown error (errorCode=" + errorCode + ")");
+                Log.e(TAG, "Scan failed with unknown error (errorCode=" + errorCode + ")");
                 break;
         }
     }
@@ -285,7 +365,6 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
 
     @Override
     public void didUpdateSensorStatus(@EmpaSensorStatus int status, EmpaSensorType type) {
-
         didUpdateOnWristStatus(status);
     }
 
@@ -300,31 +379,27 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
             // Start scanning
             deviceManager.startScanning();
             // The device manager has established a connection
-
             hide();
 
         } else if (status == EmpaStatus.CONNECTED) {
-
             show();
             // The device manager disconnected from a device
         } else if (status == EmpaStatus.DISCONNECTED) {
-
             updateLabel(deviceNameLabel, "");
-
             hide();
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void didReceiveAcceleration(int x, int y, int z, double timestamp) {
-        updateLabel(accel_xLabel, "" + x);
-        updateLabel(accel_yLabel, "" + y);
-        updateLabel(accel_zLabel, "" + z);
+        accel_xLabel.setProgress(x, true);
+        accel_yLabel.setProgress(y, true);
+        accel_zLabel.setProgress(z, true);
     }
 
     @Override
     public void didReceiveBVP(float bvp, double timestamp) {
-        updateLabel(bvpLabel, "" + bvp);
     }
 
     @Override
@@ -339,7 +414,7 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
 
     @Override
     public void didReceiveIBI(float ibi, double timestamp) {
-        updateLabel(ibiLabel, "" + ibi);
+        updateLabel(ibiLabel, "" + 60 / ibi);
     }
 
     @Override
@@ -364,51 +439,97 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
 
     @Override
     public void didEstablishConnection() {
-
         show();
     }
 
     @Override
     public void didUpdateOnWristStatus(@EmpaSensorStatus final int status) {
-
         runOnUiThread(new Runnable() {
-
             @Override
             public void run() {
 
                 if (status == EmpaSensorStatus.ON_WRIST) {
-
-                    ((TextView) findViewById(R.id.wrist_status_label)).setText("ON WRIST");
-                }
-                else {
-
-                    ((TextView) findViewById(R.id.wrist_status_label)).setText("NOT ON WRIST");
+                    ((TextView) findViewById(R.id.status)).setText("ON WRIST");
+                } else {
+                    ((TextView) findViewById(R.id.status)).setText("NOT ON WRIST");
                 }
             }
         });
     }
 
     void show() {
-
         runOnUiThread(new Runnable() {
-
             @Override
             public void run() {
-
-                dataCnt.setVisibility(View.VISIBLE);
+                temperatureCV.setVisibility(View.VISIBLE);
+                accelCV.setVisibility(View.VISIBLE);
+                heartRateCV.setVisibility(View.VISIBLE);
+                edaCV.setVisibility(View.VISIBLE);
             }
         });
     }
 
     void hide() {
-
         runOnUiThread(new Runnable() {
-
             @Override
             public void run() {
-
-                dataCnt.setVisibility(View.INVISIBLE);
+                temperatureCV.setVisibility(View.GONE);
+                accelCV.setVisibility(View.GONE);
+                heartRateCV.setVisibility(View.GONE);
+                edaCV.setVisibility(View.GONE);
             }
         });
+    }
+
+    public int getImage(String imageName) {
+        int drawableResourceId = this.getResources().getIdentifier(imageName, "drawable", this.getPackageName());
+        return drawableResourceId;
+    }
+
+    public void subscribeToTopic(){
+        try {
+            mqttAndroidClient.subscribe(subscriptionTopic, 0, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    Toast.makeText(getApplicationContext(),"Subscribed!", Toast.LENGTH_SHORT).show();
+                    Log.i(MQTT, "Subscribed");
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    Toast.makeText(getApplicationContext(),"Failed to subscribe!", Toast.LENGTH_SHORT).show();
+                    Log.i(MQTT, "Failed to subscribe!");
+                }
+            });
+
+            // THIS DOES NOT WORK!
+            mqttAndroidClient.subscribe(subscriptionTopic, 0, new IMqttMessageListener() {
+                @Override
+                public void messageArrived(String topic, MqttMessage message) throws Exception {
+                    // message Arrived!
+                    Log.v("MQTT","Message: " + topic + " : " + new String(message.getPayload()));
+                }
+            });
+
+        } catch (MqttException ex){
+            System.err.println("Exception whilst subscribing");
+            ex.printStackTrace();
+        }
+    }
+
+    public void publishMessage(){
+
+        try {
+            MqttMessage message = new MqttMessage();
+            message.setPayload(publishMessage.getBytes());
+            mqttAndroidClient.publish(publishTopic, message);
+            Log.i(MQTT, "Message Published");
+            if(!mqttAndroidClient.isConnected()){
+                Log.i(MQTT, mqttAndroidClient.getBufferedMessageCount() + " messages in buffer.");
+            }
+        } catch (MqttException e) {
+            System.err.println("Error Publishing: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
