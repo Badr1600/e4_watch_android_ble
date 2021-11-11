@@ -91,8 +91,6 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     String clientId = "ExampleAndroidClient";
     final String subscriptionTopic = "exampleAndroidTopic";
     final String publishTopic = "tb/mqtt-integration-tutorial/sensors/SN-001/temperature";
-    final String publishMessage = "{\"value\":25.1}";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,10 +120,9 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         disconnectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                publishMessage();
-//                if (deviceManager != null) {
-//                    deviceManager.disconnect();
-//                }
+                if (deviceManager != null) {
+                    deviceManager.disconnect();
+                }
             }
         });
 
@@ -396,6 +393,8 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         accel_xLabel.setProgress(x, true);
         accel_yLabel.setProgress(y, true);
         accel_zLabel.setProgress(z, true);
+        String publishMessage = "{\"accel_x\":" + x + "," + "\"accel_y\":" + y + "," + "\"accel_z\":" + z + "}";
+        publishMessage(publishMessage);
     }
 
     @Override
@@ -415,11 +414,15 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     @Override
     public void didReceiveIBI(float ibi, double timestamp) {
         updateLabel(ibiLabel, "" + 60 / ibi);
+        String publishMessage = "{\"heart_rate\":" + (60 / ibi) + "}";
+        publishMessage(publishMessage);
     }
 
     @Override
     public void didReceiveTemperature(float temp, double timestamp) {
         updateLabel(temperatureLabel, "" + temp);
+        String publishMessage = "{\"temperature\":" + temp + "}";
+        publishMessage(publishMessage);
     }
 
     // Update a label with some text, making sure this is run in the UI thread
@@ -517,7 +520,7 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         }
     }
 
-    public void publishMessage(){
+    public void publishMessage(String publishMessage){
 
         try {
             MqttMessage message = new MqttMessage();
