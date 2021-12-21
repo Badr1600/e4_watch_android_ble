@@ -51,6 +51,8 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.util.Locale;
+
 
 public class MainActivity extends AppCompatActivity implements EmpaDataDelegate, EmpaStatusDelegate {
 
@@ -63,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     private static final int REQUEST_PERMISSION_ACCESS_COARSE_LOCATION = 1;
 
 
-    private static final String EMPATICA_API_KEY = "BADR"; // TODO insert your API Key here
+    private static final String EMPATICA_API_KEY = "6a297c416975458a8c0fc1d83a3da484"; // TODO insert your API Key here
 
 
     private EmpaDeviceManager deviceManager = null;
@@ -88,9 +90,12 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     MqttAndroidClient mqttAndroidClient;
 
     final String serverUri = "tcp://199.212.33.168:1883";
-    String clientId = "ExampleAndroidClient";
+    String clientId = "E4_SN_002";
     final String subscriptionTopic = "exampleAndroidTopic";
-    final String publishTopic = "tb/mqtt-integration-tutorial/sensors/SN-001/temperature";
+    final String publishTopicTemperature = "tb/mqtt-integration/sensors/e4/SN-002/temperature";
+    final String publishTopicHR = "tb/mqtt-integration/sensors/e4/SN-002/hr";
+    final String publishTopicACC = "tb/mqtt-integration/sensors/e4/SN-002/acc";
+    final String publishTopicEDA = "tb/mqtt-integration/sensors/e4/SN-002/eda";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         clientId = clientId + System.currentTimeMillis();
 
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
+
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
@@ -393,8 +399,10 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         accel_xLabel.setProgress(x, true);
         accel_yLabel.setProgress(y, true);
         accel_zLabel.setProgress(z, true);
-        String publishMessage = "{\"accel_x\":" + x + "," + "\"accel_y\":" + y + "," + "\"accel_z\":" + z + "}";
-        publishMessage(publishMessage);
+        if(mqttAndroidClient.isConnected()) {
+            String publishMessage = String.format(Locale.US, "{\"device_id\": \"SN-002\", \"acc_x\": %d, \"acc_y\": %d, \"acc_z\": %d, \"mag\": %f }", x, y, z, Math.sqrt(x^2 + y^2 + z^2));
+            publishMessageACC(publishMessage);
+        }
     }
 
     @Override
@@ -409,20 +417,28 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
     @Override
     public void didReceiveGSR(float gsr, double timestamp) {
         updateLabel(edaLabel, "" + gsr);
+        if(mqttAndroidClient.isConnected()){
+            String publishMessage = String.format(Locale.US, "{\"device_id\": \"SN-002\", \"eda\": %f }", gsr);
+            publishMessageEDA(publishMessage);
+        }
     }
 
     @Override
     public void didReceiveIBI(float ibi, double timestamp) {
         updateLabel(ibiLabel, "" + 60 / ibi);
-        String publishMessage = "{\"heart_rate\":" + (60 / ibi) + "}";
-        publishMessage(publishMessage);
+        if(mqttAndroidClient.isConnected()) {
+            String publishMessage = String.format(Locale.US, "{\"device_id\": \"SN-002\", \"hr\": %f }", 60 / ibi);
+            publishMessageHR(publishMessage);
+        }
     }
 
     @Override
     public void didReceiveTemperature(float temp, double timestamp) {
         updateLabel(temperatureLabel, "" + temp);
-        String publishMessage = "{\"temperature\":" + temp + "}";
-        publishMessage(publishMessage);
+        if(mqttAndroidClient.isConnected()) {
+            String publishMessage = String.format(Locale.US, "{\"device_id\": \"SN-002\", \"temperature\": %f }", temp);
+            publishMessageTemperature(publishMessage);
+        }
     }
 
     // Update a label with some text, making sure this is run in the UI thread
@@ -520,12 +536,60 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
         }
     }
 
-    public void publishMessage(String publishMessage){
+    public void publishMessageTemperature(String publishMessage){
 
         try {
             MqttMessage message = new MqttMessage();
             message.setPayload(publishMessage.getBytes());
-            mqttAndroidClient.publish(publishTopic, message);
+            mqttAndroidClient.publish(publishTopicTemperature, message);
+            Log.i(MQTT, "Message Published");
+            if(!mqttAndroidClient.isConnected()){
+                Log.i(MQTT, mqttAndroidClient.getBufferedMessageCount() + " messages in buffer.");
+            }
+        } catch (MqttException e) {
+            System.err.println("Error Publishing: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void publishMessageACC(String publishMessage){
+
+        try {
+            MqttMessage message = new MqttMessage();
+            message.setPayload(publishMessage.getBytes());
+            mqttAndroidClient.publish(publishTopicACC, message);
+            Log.i(MQTT + "ACC", "Message Published");
+            if(!mqttAndroidClient.isConnected()){
+                Log.i(MQTT, mqttAndroidClient.getBufferedMessageCount() + " messages in buffer.");
+            }
+        } catch (MqttException e) {
+            System.err.println("Error Publishing: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void publishMessageEDA(String publishMessage){
+
+        try {
+            MqttMessage message = new MqttMessage();
+            message.setPayload(publishMessage.getBytes());
+            mqttAndroidClient.publish(publishTopicEDA, message);
+            Log.i(MQTT, "Message Published");
+            if(!mqttAndroidClient.isConnected()){
+                Log.i(MQTT, mqttAndroidClient.getBufferedMessageCount() + " messages in buffer.");
+            }
+        } catch (MqttException e) {
+            System.err.println("Error Publishing: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void publishMessageHR(String publishMessage){
+
+        try {
+            MqttMessage message = new MqttMessage();
+            message.setPayload(publishMessage.getBytes());
+            mqttAndroidClient.publish(publishTopicHR, message);
             Log.i(MQTT, "Message Published");
             if(!mqttAndroidClient.isConnected()){
                 Log.i(MQTT, mqttAndroidClient.getBufferedMessageCount() + " messages in buffer.");
