@@ -432,7 +432,7 @@ public class MainActivity extends AppCompatActivity implements EmpaDataDelegate,
             }
         }
         if(mqttAndroidClient.isConnected()){
-            String publishMessage2 = String.format("{\"device_id\": \"SN-002\", \"acc_x\": %d, \"acc_y\": %d, \"acc_z\": %d, \"mag\": %d }", x, y, z, x);
+            String publishMessage2 = String.format("{\"device_id\": \"SN-002\", \"acc_x\": %d, \"acc_y\": %d, \"acc_z\": %d }", x, y, z);
             publishMessageACC(publishMessage2, 1);
         }
     }
